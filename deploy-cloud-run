@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -eu
+
+project="zippy-cab-252712"
+service="sawert"
+domain="sawert.se"
+container="sawert.se"
+image="gcr.io/$project/$container"
+
+_add_dns_record() {
+    if ! gcloud domains list-user-verified | grep "$domain" > /dev/null; then
+        gcloud domains verify "$domain"
+        gcloud beta run domain-mappings create --service "$service" --domain "$domain" --platform managed
+        gcloud beta run domain-mappings describe --domain "$service"
+    fi
+}
+
+_push_image_and_deploy() {
+    gcloud builds submit --tag "$image"
+    gcloud beta run deploy --image "$image" --platform managed
+}
+
+_add_dns_record
+_push_image_and_deploy
